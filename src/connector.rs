@@ -1,50 +1,13 @@
+pub use crate::connector_output::{ExchangeOutput, LatestOutput};
 use crate::currency::Currency;
 use bigdecimal::BigDecimal;
 use error_stack::{Context, Result};
 use std::fmt;
-use std::fmt::Formatter;
 
 #[derive(Debug)]
+#[allow(clippy::module_name_repetitions)]
 pub enum ConnectorError {
     InvalidInput(String),
-}
-
-pub struct ExchangeOutput {
-    value: BigDecimal,
-    exchange_rate: BigDecimal,
-}
-
-impl ExchangeOutput {
-    pub fn new(value: BigDecimal, exchange_rate: BigDecimal) -> Self {
-        ExchangeOutput {
-            value,
-            exchange_rate,
-        }
-    }
-}
-impl fmt::Display for ExchangeOutput {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{} {}", self.value, self.exchange_rate)
-    }
-}
-
-pub struct LatestOutput {
-    currency: Currency,
-    exchange_rate: BigDecimal,
-}
-
-impl LatestOutput {
-    pub fn new(currency: Currency, exchange_rate: BigDecimal) -> Self {
-        LatestOutput {
-            currency,
-            exchange_rate,
-        }
-    }
-}
-impl fmt::Display for LatestOutput {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{}, {}", self.currency, self.exchange_rate)
-    }
 }
 
 impl fmt::Display for ConnectorError {

@@ -1,13 +1,14 @@
 #![feature(iterator_try_collect)]
 
 mod connector;
+mod connector_output;
 mod connectors;
 mod currency;
 mod handlers;
 
 use crate::connectors::mock_connector::MockConnector;
 use clap::{Parser, Subcommand};
-use handlers::*;
+use handlers::{handle_exchange, handle_latest, handle_list_currencies, ExchangeArgs, LatestArgs};
 
 #[derive(Parser)]
 #[command( about, long_about = None)]
@@ -33,18 +34,22 @@ fn main() {
 
     match &cli.command {
         Commands::Exchange(args) => match handle_exchange(args, &connector) {
-            Ok(value) => println!("{}", value),
+            Ok(value) => println!("{value}"),
             Err(err) => log::error!("\n{err:?}"),
         },
         Commands::ListCurrencies => match handle_list_currencies(&connector) {
             Ok(currencies) => {
-                currencies.iter().for_each(|i| println!("{}", i));
+                for i in &currencies {
+                    println!("{i}");
+                }
             }
             Err(err) => log::error!("\n{err:?}"),
         },
         Commands::Latest(args) => match handle_latest(args, &connector) {
             Ok(currencies) => {
-                currencies.iter().for_each(|i| println!("{}", i));
+                for i in &currencies {
+                    println!("{i}");
+                }
             }
             Err(err) => log::error!("\n{err:?}"),
         },

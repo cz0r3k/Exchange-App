@@ -1,4 +1,5 @@
-use crate::connector::{Connector, ConnectorError, ExchangeOutput, LatestOutput};
+use crate::connector::{Connector, ConnectorError};
+use crate::connector_output::{ExchangeOutput, LatestOutput};
 use crate::currency::Currency;
 use bigdecimal::BigDecimal;
 use error_stack::{Report, Result};
@@ -35,11 +36,11 @@ impl MockConnector {
     }
     fn rate(&self, source: &str, target: &str) -> Result<BigDecimal, ConnectorError> {
         let source_rate = self.rates.get(source).ok_or_else(|| {
-            let msg = format!("Source currency code {} not exist", source);
+            let msg = format!("Source currency code {source} not exist");
             Report::new(ConnectorError::InvalidInput(msg.clone())).attach_printable(msg)
         })?;
         let target_rate = self.rates.get(target).ok_or_else(|| {
-            let msg = format!("Target currency code {} not exist", target);
+            let msg = format!("Target currency code {target} not exist");
             Report::new(ConnectorError::InvalidInput(msg.clone())).attach_printable(msg)
         })?;
         Ok(target_rate / source_rate)
@@ -49,7 +50,7 @@ impl MockConnector {
         if let Some(currency) = currency {
             Ok(currency.clone())
         } else {
-            let msg = format!("Currency code {} not exist", currency_str);
+            let msg = format!("Currency code {currency_str} not exist");
             Err(Report::new(ConnectorError::InvalidInput(msg.clone())).attach_printable(msg))
         }
     }
@@ -68,7 +69,9 @@ impl Connector for MockConnector {
     }
 
     fn list_currencies(&self) -> Result<Vec<Currency>, ConnectorError> {
-        Ok(self.currencies.values().cloned().collect())
+        let mut currencies = self.currencies.values().cloned().collect::<Vec<_>>();
+        currencies.sort_unstable();
+        Ok(currencies)
     }
 
     fn latest(
@@ -77,12 +80,12 @@ impl Connector for MockConnector {
         target: Option<Vec<String>>,
     ) -> Result<Vec<LatestOutput>, ConnectorError> {
         if !self.currencies.contains_key(base) {
-            let msg = format!("Currency code {} not exist", base);
+            let msg = format!("Currency code {base} not exist");
             return Err(
                 Report::new(ConnectorError::InvalidInput(msg.clone())).attach_printable(msg)
             );
         }
-        Ok(if target.is_some() {
+        let mut currencies = if target.is_some() {
             target
                 .unwrap()
                 .iter()
@@ -93,6 +96,8 @@ impl Connector for MockConnector {
         }
         .iter()
         .map(|c| LatestOutput::new(c.clone(), self.rate(base, c.get_short_code()).unwrap()))
-        .collect::<Vec<_>>())
+        .collect::<Vec<_>>();
+        currencies.sort_unstable();
+        Ok(currencies)
     }
 }
