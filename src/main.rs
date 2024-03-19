@@ -1,3 +1,5 @@
+#![feature(iterator_try_collect)]
+
 mod connector;
 mod connectors;
 mod currency;
@@ -20,18 +22,31 @@ enum Commands {
     Exchange(ExchangeArgs),
     /// List all available currencies
     ListCurrencies,
+    /// List currencies with exchange rate
+    Latest(LatestArgs),
 }
 
 fn main() {
+    env_logger::init();
     let cli = Cli::parse();
     let connector = MockConnector::new();
 
     match &cli.command {
-        Commands::Exchange(args) => {
-            handle_exchange(args, &connector);
-        }
-        Commands::ListCurrencies => {
-            handle_list_currencies(&connector);
-        }
+        Commands::Exchange(args) => match handle_exchange(args, &connector) {
+            Ok(value) => println!("{}", value),
+            Err(err) => log::error!("\n{err:?}"),
+        },
+        Commands::ListCurrencies => match handle_list_currencies(&connector) {
+            Ok(currencies) => {
+                currencies.iter().for_each(|i| println!("{}", i));
+            }
+            Err(err) => log::error!("\n{err:?}"),
+        },
+        Commands::Latest(args) => match handle_latest(args, &connector) {
+            Ok(currencies) => {
+                currencies.iter().for_each(|i| println!("{}", i));
+            }
+            Err(err) => log::error!("\n{err:?}"),
+        },
     }
 }

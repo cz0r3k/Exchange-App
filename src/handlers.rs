@@ -1,27 +1,45 @@
-use crate::connector::Connector;
+use crate::connector::{Connector, ConnectorError, ExchangeOutput, LatestOutput};
+use crate::currency::Currency;
 use bigdecimal::BigDecimal;
 use clap::Args;
+use error_stack::Result;
 
 #[derive(Args, Debug)]
 pub struct ExchangeArgs {
-    /// Source currency
+    /// Source currency code
     #[arg(short, long)]
     source: String,
-    /// Target currency
+    /// Target currency code
     #[arg(short, long)]
     target: String,
     /// Amount to be converted
     #[arg(value_parser = clap::value_parser!(BigDecimal))]
     amount: BigDecimal,
 }
-pub fn handle_exchange(args: &ExchangeArgs, connector: &impl Connector) {
-    let value = connector
-        .exchange(&args.source, &args.target, &args.amount)
-        .unwrap();
-    println!("{}", value);
+
+#[derive(Args, Debug)]
+pub struct LatestArgs {
+    /// Base currency code
+    #[arg(short, long)]
+    base: String,
+    /// Target currency code
+    #[arg(short, long)]
+    target: Option<Vec<String>>,
+}
+pub fn handle_exchange(
+    args: &ExchangeArgs,
+    connector: &impl Connector,
+) -> Result<ExchangeOutput, ConnectorError> {
+    connector.exchange(&args.source, &args.target, &args.amount)
 }
 
-pub fn handle_list_currencies(connector: &impl Connector) {
-    let currencies = connector.list_currencies().unwrap();
-    currencies.iter().for_each(|i| println!("{}", i));
+pub fn handle_list_currencies(connector: &impl Connector) -> Result<Vec<Currency>, ConnectorError> {
+    connector.list_currencies()
+}
+
+pub fn handle_latest(
+    args: &LatestArgs,
+    connector: &impl Connector,
+) -> Result<Vec<LatestOutput>, ConnectorError> {
+    connector.latest(&args.base, args.target.clone())
 }
