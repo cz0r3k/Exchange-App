@@ -1,5 +1,11 @@
-use bigdecimal::BigDecimal;
-use clap::{Args, Parser, Subcommand};
+mod connector;
+mod connectors;
+mod currency;
+mod handlers;
+
+use crate::connectors::mock_connector::MockConnector;
+use clap::{Parser, Subcommand};
+use handlers::*;
 
 #[derive(Parser)]
 #[command( about, long_about = None)]
@@ -16,28 +22,16 @@ enum Commands {
     ListCurrencies,
 }
 
-#[derive(Args, Debug)]
-struct ExchangeArgs {
-    /// source currency
-    #[arg(short, long)]
-    source: String,
-    /// target currency
-    #[arg(short, long)]
-    target: String,
-    /// Amount to be converted
-    #[arg(value_parser = clap::value_parser!(BigDecimal))]
-    amount: BigDecimal,
-}
-
 fn main() {
     let cli = Cli::parse();
+    let connector = MockConnector::new();
 
     match &cli.command {
         Commands::Exchange(args) => {
-            println!(" {args:?}")
+            handle_exchange(args, &connector);
         }
         Commands::ListCurrencies => {
-            println!("List");
+            handle_list_currencies(&connector);
         }
     }
 }
