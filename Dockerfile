@@ -15,4 +15,4 @@ RUN cargo +nightly build --release --bin exchangeapp
 FROM debian:bookworm-slim AS runtime
 WORKDIR /app
 COPY --from=builder /app/target/release/exchangeapp .
-CMD ["./exchangeapp --help"]
+CMD ["./exchangeapp", "--help"]
