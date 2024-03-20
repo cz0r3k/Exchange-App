@@ -1,3 +1,4 @@
+#![allow(clippy::borrowed_box)]
 use crate::connector::{Connector, ConnectorError, ExchangeOutput, LatestOutput};
 use crate::currency::Currency;
 use bigdecimal::BigDecimal;
@@ -28,18 +29,20 @@ pub struct LatestArgs {
 }
 pub fn handle_exchange(
     args: &ExchangeArgs,
-    connector: &impl Connector,
+    connector: &Box<dyn Connector>,
 ) -> Result<ExchangeOutput, ConnectorError> {
     connector.exchange(&args.source, &args.target, &args.amount)
 }
 
-pub fn handle_list_currencies(connector: &impl Connector) -> Result<Vec<Currency>, ConnectorError> {
+pub fn handle_list_currencies(
+    connector: &Box<dyn Connector>,
+) -> Result<Vec<Currency>, ConnectorError> {
     connector.list_currencies()
 }
 
 pub fn handle_latest(
     args: &LatestArgs,
-    connector: &impl Connector,
+    connector: &Box<dyn Connector>,
 ) -> Result<Vec<LatestOutput>, ConnectorError> {
     connector.latest(&args.base, args.target.clone())
 }

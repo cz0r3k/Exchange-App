@@ -10,7 +10,8 @@ pub struct ExchangeOutput {
 }
 
 impl ExchangeOutput {
-    pub fn new(value: BigDecimal, exchange_rate: BigDecimal) -> Self {
+    pub fn new(value: &BigDecimal, exchange_rate: &BigDecimal) -> Self {
+        let (value, exchange_rate) = (value.clone(), exchange_rate.clone());
         ExchangeOutput {
             value,
             exchange_rate,
@@ -35,6 +36,9 @@ impl LatestOutput {
             currency,
             exchange_rate,
         }
+    }
+    pub fn get_rate(&self) -> &BigDecimal {
+        &self.exchange_rate
     }
 }
 impl fmt::Display for LatestOutput {

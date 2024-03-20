@@ -1,6 +1,7 @@
 services:
   exchange_app:
     build: .
+    image: cz0r3k/exchange-app:latest
     stdin_open: true
     tty: true
     entrypoint: "/bin/bash"

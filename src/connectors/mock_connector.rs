@@ -16,15 +16,15 @@ impl MockConnector {
         let currencies = HashMap::from([
             (
                 "GBP".to_string(),
-                Currency::new("Pound Sterling".to_string(), "GBP".to_string()),
+                Currency::new("GBP", Some("Pound Sterling".to_string())),
             ),
             (
                 "PLN".to_string(),
-                Currency::new("Zloty".to_string(), "PLN".to_string()),
+                Currency::new("PLN", Some("Zloty".to_string())),
             ),
             (
                 "USD".to_string(),
-                Currency::new("US Dollar".to_string(), "USD".to_string()),
+                Currency::new("USD", Some("US Dollar".to_string())),
             ),
         ]);
         let rates = HashMap::from([
@@ -63,9 +63,11 @@ impl Connector for MockConnector {
         target: &str,
         amount: &BigDecimal,
     ) -> Result<ExchangeOutput, ConnectorError> {
-        let exchange_rate = self.rate(source, target)?;
-        let value = amount * exchange_rate.clone();
-        Ok(ExchangeOutput::new(value, exchange_rate))
+        let exchange_rate = &self.rate(source, target)?;
+        Ok(ExchangeOutput::new(
+            &(amount * exchange_rate),
+            exchange_rate,
+        ))
     }
 
     fn list_currencies(&self) -> Result<Vec<Currency>, ConnectorError> {

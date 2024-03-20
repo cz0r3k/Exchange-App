@@ -4,13 +4,17 @@ use std::fmt::Formatter;
 
 #[derive(Clone, PartialEq, Eq)]
 pub struct Currency {
-    name: String,
     short_code: String,
+    name: Option<String>,
 }
 
 impl fmt::Display for Currency {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{} ({})", self.short_code, self.name)
+        if self.name.is_some() {
+            write!(f, "{} ({})", self.short_code, self.name.clone().unwrap())
+        } else {
+            write!(f, "{}", self.short_code)
+        }
     }
 }
 
@@ -27,8 +31,9 @@ impl PartialOrd for Currency {
 }
 
 impl Currency {
-    pub fn new(name: String, short_code: String) -> Self {
-        Currency { name, short_code }
+    pub fn new(short_code: &str, name: Option<String>) -> Self {
+        let short_code = short_code.to_string();
+        Currency { short_code, name }
     }
     pub fn get_short_code(&self) -> &str {
         &self.short_code
