@@ -1,0 +1,6 @@
+services:
+  exchange_app:
+    build: .
+    stdin_open: true
+    tty: true
+    entrypoint: "/bin/bash"
