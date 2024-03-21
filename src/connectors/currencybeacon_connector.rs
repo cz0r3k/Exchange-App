@@ -1,8 +1,10 @@
 use crate::connector::{Connector, ConnectorError, Connectors, ExchangeOutput, LatestOutput};
 use crate::currency::Currency;
+use crate::utility::API_KEY_ENV;
 use bigdecimal::BigDecimal;
 use error_stack::{Context, Report, Result, ResultExt};
 use json::JsonValue;
+use reqwest::StatusCode;
 use std::str::FromStr;
 use std::{env, fmt};
 use strum::EnumProperty;
@@ -16,7 +18,7 @@ pub struct CurrencybeaconConnector {
 impl CurrencybeaconConnector {
     pub fn new() -> Result<Self, ConnectorError> {
         let connector = Connectors::Currencybeacon;
-        match env::var(connector.get_str("API_KEY_ENV").unwrap()) {
+        match env::var(connector.get_str(API_KEY_ENV).unwrap()) {
             Ok(val) => Ok(CurrencybeaconConnector {
                 http_client: reqwest::blocking::Client::new(),
                 api_key: val,
@@ -24,9 +26,24 @@ impl CurrencybeaconConnector {
             Err(_) => Err(Report::new(ConnectorError::ApiKeyRequirements)),
         }
     }
-    fn make_request(&self, url: &str) -> Result<JsonValue, ApiError> {
-        json::parse(&self.http_client.get(url).send().unwrap().text().unwrap())
-            .change_context(ApiError)
+    fn make_request(&self, url: &str) -> Result<JsonValue, ConnectorError> {
+        let response = self.http_client.get(url).send();
+        match response {
+            Ok(response) => match response.status() {
+                StatusCode::OK => {
+                    let text = response.text().change_context(ConnectorError::ParseError)?;
+                    return json::parse(&text).change_context(ConnectorError::JsonParsingError);
+                }
+                StatusCode::UNAUTHORIZED => Err(Report::new(ApiError::AuthorizationError)),
+                StatusCode::INTERNAL_SERVER_ERROR => Err(Report::new(ApiError::ServerError)),
+                StatusCode::TOO_MANY_REQUESTS => Err(Report::new(ApiError::TooManyRequests)),
+                status_code => Err(Report::new(ApiError::SomethingElse(format!(
+                    "Status: {status_code:?}"
+                )))),
+            }
+            .change_context(ConnectorError::ApiError),
+            Err(err) => Err(err).change_context(ConnectorError::SendingError)?,
+        }
     }
 }
 
@@ -48,10 +65,7 @@ impl Connector for CurrencybeaconConnector {
 
     fn list_currencies(&self) -> Result<Vec<Currency>, ConnectorError> {
         let url = format!("{BASE_URL}currencies?api_key={}", self.api_key);
-        let json = self
-            .make_request(&url)
-            .change_context(ConnectorError::ApiError)?;
-
+        let json = self.make_request(&url)?;
         Ok(json["response"]
             .members()
             .map(|v| Currency::new(&v["short_code"].to_string(), Some(v["name"].to_string())))
@@ -62,18 +76,19 @@ impl Connector for CurrencybeaconConnector {
         base: &str,
         target: Option<Vec<String>>,
     ) -> Result<Vec<LatestOutput>, ConnectorError> {
-        let url = if target.is_some() {
-            let target_str = target.unwrap().join(",");
-            format!(
-                "{BASE_URL}latest?api_key={}&base={base}&symbols={target_str}",
-                self.api_key
-            )
-        } else {
-            format!("{BASE_URL}latest?api_key={}&base={base}", self.api_key)
+        let url = match target {
+            Some(target) => {
+                let target_str = target.join(",");
+                format!(
+                    "{BASE_URL}latest?api_key={}&base={base}&symbols={target_str}",
+                    self.api_key
+                )
+            }
+            None => {
+                format!("{BASE_URL}latest?api_key={}&base={base}", self.api_key)
+            }
         };
-        let json = &self
-            .make_request(&url)
-            .change_context(ConnectorError::ApiError)?;
+        let json = &self.make_request(&url)?;
         Ok(json["rates"]
             .entries()
             .map(|(k, v)| {
@@ -82,12 +97,17 @@ impl Connector for CurrencybeaconConnector {
                     BigDecimal::from_str(&v.to_string()).unwrap(),
                 )
             })
-            .collect::<Vec<LatestOutput>>())
+            .collect::<Vec<_>>())
     }
 }
 
 #[derive(Debug)]
-pub struct ApiError;
+pub enum ApiError {
+    ServerError,
+    TooManyRequests,
+    AuthorizationError,
+    SomethingElse(String),
+}
 impl fmt::Display for ApiError {
     fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt.write_str("Error with api")

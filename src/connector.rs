@@ -42,6 +42,9 @@ pub enum ConnectorError {
     InvalidInput(String),
     ApiKeyRequirements,
     ApiError,
+    SendingError,
+    JsonParsingError,
+    ParseError,
 }
 
 impl fmt::Display for ConnectorError {

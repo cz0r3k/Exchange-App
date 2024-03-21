@@ -87,14 +87,12 @@ impl Connector for MockConnector {
                 Report::new(ConnectorError::InvalidInput(msg.clone())).attach_printable(msg)
             );
         }
-        let mut currencies = if target.is_some() {
-            target
-                .unwrap()
+        let mut currencies = match target {
+            Some(target) => target
                 .iter()
                 .map(|c| self.get_currency(c))
-                .try_collect::<Vec<_>>()?
-        } else {
-            self.list_currencies().unwrap()
+                .try_collect::<Vec<_>>()?,
+            None => self.list_currencies().unwrap(),
         }
         .iter()
         .map(|c| LatestOutput::new(c.clone(), self.rate(base, c.get_short_code()).unwrap()))

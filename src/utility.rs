@@ -5,7 +5,7 @@ use strum::EnumProperty;
 use strum::IntoEnumIterator;
 
 const CONNECTOR_ENV: &str = "EAPP_CONNECTOR";
-const API_KEY_ENV: &str = "API_KEY_ENV";
+pub const API_KEY_ENV: &str = "API_KEY_ENV";
 
 pub fn show_connectors() {
     let used_connector = get_connector();
