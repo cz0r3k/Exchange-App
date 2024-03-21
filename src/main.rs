@@ -9,17 +9,21 @@ mod utility;
 use crate::connector::{create_connector, Connectors};
 use crate::utility::{get_connector, set_apikey, set_connector, show_connectors};
 use clap::{Parser, Subcommand};
+use dotenv::dotenv;
 use handlers::{handle_exchange, handle_latest, handle_list_currencies, ExchangeArgs, LatestArgs};
 
 #[derive(Parser)]
-#[command( about, long_about = None)]
+#[command( about, long_about = None, arg_required_else_help(true))]
 struct Cli {
+    ///Show all available connectors
     #[arg(long, exclusive = true)]
     show_connectors: bool,
 
+    ///Set current connector
     #[arg(long)]
     set_connector: Option<Connectors>,
 
+    ///Set api key for chosen connector
     #[arg(long)]
     set_apikey: Option<String>,
 
@@ -27,7 +31,7 @@ struct Cli {
     command: Option<Commands>,
 }
 
-#[derive(Subcommand)]
+#[derive(Subcommand, Debug)]
 enum Commands {
     /// Exchange currency to another
     Exchange(ExchangeArgs),
@@ -39,6 +43,7 @@ enum Commands {
 
 fn main() {
     env_logger::init();
+    dotenv().ok();
     let cli = Cli::parse();
 
     if cli.show_connectors {

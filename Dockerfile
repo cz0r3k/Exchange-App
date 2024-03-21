@@ -12,7 +12,8 @@ RUN cargo +nightly chef cook --release --recipe-path recipe.json
 COPY . .
 RUN cargo +nightly build --release --bin exchangeapp
 
-FROM debian:bookworm-slim AS runtime
+FROM debian:bookworm AS runtime
+RUN apt-get update && apt install -y openssl ca-certificates && apt-get clean
 WORKDIR /app
 COPY --from=builder /app/target/release/exchangeapp .
 CMD ["./exchangeapp", "--help"]
