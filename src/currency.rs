@@ -2,7 +2,7 @@ use std::cmp::Ordering;
 use std::fmt;
 use std::fmt::Formatter;
 
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Currency {
     short_code: String,
     name: Option<String>,
@@ -37,5 +37,21 @@ impl Currency {
     }
     pub fn get_short_code(&self) -> &str {
         &self.short_code
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn currency_without_name() {
+        let currency = Currency::new("PLN", None);
+        assert_eq!("PLN", format!("{currency}"))
+    }
+
+    #[test]
+    fn currency_with_name() {
+        let currency = Currency::new("PLN", Some("Zloty".to_string()));
+        assert_eq!("PLN (Zloty)", format!("{currency}"))
     }
 }

@@ -20,8 +20,10 @@ use strum_macros::{Display, EnumIter, EnumString};
     Display,
     strum_macros::EnumProperty,
     EnumString,
+    Debug,
 )]
-pub enum Connectors {
+#[allow(clippy::module_name_repetitions)]
+pub enum ConnectorEnum {
     #[strum(props(API_KEY_ENV = ""))]
     Mock,
     #[strum(props(API_KEY_ENV = "EAPP_CURRENCYBEACON"))]
@@ -29,10 +31,10 @@ pub enum Connectors {
 }
 
 #[allow(clippy::module_name_repetitions)]
-pub fn create_connector(connector: Connectors) -> Result<Box<dyn Connector>, ConnectorError> {
+pub fn create_connector(connector: ConnectorEnum) -> Result<Box<dyn Connector>, ConnectorError> {
     match connector {
-        Connectors::Currencybeacon => Ok(Box::new(CurrencybeaconConnector::new()?)),
-        Connectors::Mock => Ok(Box::new(MockConnector::new())),
+        ConnectorEnum::Currencybeacon => Ok(Box::new(CurrencybeaconConnector::new()?)),
+        ConnectorEnum::Mock => Ok(Box::new(MockConnector::new())),
     }
 }
 

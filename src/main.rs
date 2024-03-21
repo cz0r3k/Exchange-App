@@ -6,7 +6,7 @@ mod currency;
 mod handlers;
 mod utility;
 
-use crate::connector::{create_connector, Connectors};
+use crate::connector::{create_connector, ConnectorEnum};
 use crate::utility::{get_connector, set_apikey, set_connector, show_connectors};
 use clap::{Parser, Subcommand};
 use dotenv::dotenv;
@@ -21,7 +21,7 @@ struct Cli {
 
     ///Set current connector
     #[arg(long)]
-    set_connector: Option<Connectors>,
+    set_connector: Option<ConnectorEnum>,
 
     ///Set api key for chosen connector
     #[arg(long)]

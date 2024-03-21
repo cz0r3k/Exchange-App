@@ -4,6 +4,7 @@ use std::cmp::Ordering;
 use std::fmt;
 use std::fmt::Formatter;
 
+#[derive(Debug, PartialEq)]
 pub struct ExchangeOutput {
     value: BigDecimal,
     exchange_rate: BigDecimal,
@@ -24,7 +25,7 @@ impl fmt::Display for ExchangeOutput {
     }
 }
 
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub struct LatestOutput {
     currency: Currency,
     exchange_rate: BigDecimal,

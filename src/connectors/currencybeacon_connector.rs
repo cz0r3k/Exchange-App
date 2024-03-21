@@ -1,4 +1,4 @@
-use crate::connector::{Connector, ConnectorError, Connectors, ExchangeOutput, LatestOutput};
+use crate::connector::{Connector, ConnectorEnum, ConnectorError, ExchangeOutput, LatestOutput};
 use crate::currency::Currency;
 use crate::utility::API_KEY_ENV;
 use bigdecimal::BigDecimal;
@@ -17,32 +17,42 @@ pub struct CurrencybeaconConnector {
 
 impl CurrencybeaconConnector {
     pub fn new() -> Result<Self, ConnectorError> {
-        let connector = Connectors::Currencybeacon;
+        let connector = ConnectorEnum::Currencybeacon;
         match env::var(connector.get_str(API_KEY_ENV).unwrap()) {
             Ok(val) => Ok(CurrencybeaconConnector {
                 http_client: reqwest::blocking::Client::new(),
                 api_key: val,
             }),
-            Err(_) => Err(Report::new(ConnectorError::ApiKeyRequirements)),
+            Err(_) => Err(Report::new(ConnectorError::ApiKeyRequirements)
+                .attach_printable("This connector require api key")),
         }
     }
     fn make_request(&self, url: &str) -> Result<JsonValue, ConnectorError> {
         let response = self.http_client.get(url).send();
         match response {
-            Ok(response) => match response.status() {
-                StatusCode::OK => {
-                    let text = response.text().change_context(ConnectorError::ParseError)?;
-                    return json::parse(&text).change_context(ConnectorError::JsonParsingError);
+            Ok(response) => {
+                match response.status() {
+                    StatusCode::OK => {
+                        let text = response.text().change_context(ConnectorError::ParseError)?;
+                        return json::parse(&text)
+                            .change_context(ConnectorError::JsonParsingError)
+                            .attach_printable(format!("Error during json parsing:\n{text}"));
+                    }
+                    StatusCode::UNAUTHORIZED => Err(Report::new(ApiError::AuthorizationError)
+                        .attach_printable("Authorization error")),
+                    StatusCode::INTERNAL_SERVER_ERROR => {
+                        Err(Report::new(ApiError::ServerError).attach_printable("Server error"))
+                    }
+                    StatusCode::TOO_MANY_REQUESTS => Err(Report::new(ApiError::TooManyRequests)
+                        .attach_printable("Too many requests")),
+                    status_code => Err(Report::new(ApiError::SomethingElse)
+                        .attach_printable(format!("Status code : {status_code:?}"))),
                 }
-                StatusCode::UNAUTHORIZED => Err(Report::new(ApiError::AuthorizationError)),
-                StatusCode::INTERNAL_SERVER_ERROR => Err(Report::new(ApiError::ServerError)),
-                StatusCode::TOO_MANY_REQUESTS => Err(Report::new(ApiError::TooManyRequests)),
-                status_code => Err(Report::new(ApiError::SomethingElse(format!(
-                    "Status: {status_code:?}"
-                )))),
+                .change_context(ConnectorError::ApiError)
             }
-            .change_context(ConnectorError::ApiError),
-            Err(err) => Err(err).change_context(ConnectorError::SendingError)?,
+            Err(err) => Err(err)
+                .change_context(ConnectorError::SendingError)
+                .attach_printable("Error with sending")?,
         }
     }
 }
@@ -106,7 +116,7 @@ pub enum ApiError {
     ServerError,
     TooManyRequests,
     AuthorizationError,
-    SomethingElse(String),
+    SomethingElse,
 }
 impl fmt::Display for ApiError {
     fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {

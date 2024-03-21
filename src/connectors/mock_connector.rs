@@ -101,3 +101,70 @@ impl Connector for MockConnector {
         Ok(currencies)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::vec;
+    #[test]
+    fn latest_base_not_exist() {
+        let connector = MockConnector::new();
+        if let Err(e) = connector.latest("PLM", Some(vec!["PLN".to_string()])) {
+            if let ConnectorError::InvalidInput(msg) = e.current_context() {
+                assert_eq!("Currency code PLM not exist", msg);
+            }
+        }
+    }
+    #[test]
+    fn exchange_source_not_exist() {
+        let connector = MockConnector::new();
+        if let Err(e) = connector.exchange("PLM", "PLN", &BigDecimal::from(1)) {
+            if let ConnectorError::InvalidInput(msg) = e.current_context() {
+                assert_eq!("Source currency code PLM not exist", msg);
+            }
+        }
+    }
+    #[test]
+    fn exchange_target_not_exist() {
+        let connector = MockConnector::new();
+        if let Err(e) = connector.exchange("PLN", "PLM", &BigDecimal::from(1)) {
+            if let ConnectorError::InvalidInput(msg) = e.current_context() {
+                assert_eq!("Target currency code PLM not exist", msg);
+            }
+        }
+    }
+
+    #[test]
+    fn exchange_same_currency() {
+        let connector = MockConnector::new();
+        assert_eq!(
+            ExchangeOutput::new(&BigDecimal::from(1), &BigDecimal::from(1)),
+            connector
+                .exchange("PLN", "PLN", &BigDecimal::from(1))
+                .unwrap()
+        );
+    }
+
+    #[test]
+    fn exchange() {
+        let connector = MockConnector::new();
+        assert_eq!(
+            ExchangeOutput::new(&BigDecimal::from(40), &BigDecimal::from(4)),
+            connector
+                .exchange("USD", "PLN", &BigDecimal::from(10))
+                .unwrap()
+        );
+    }
+
+    #[test]
+    fn latest() {
+        let connector = MockConnector::new();
+        let currency = Currency::new("PLN", Some("Zloty".to_string()));
+        assert_eq!(
+            vec![LatestOutput::new(currency, BigDecimal::from(4))],
+            connector
+                .latest("USD", Some(vec!["PLN".to_string()]))
+                .unwrap()
+        );
+    }
+}
